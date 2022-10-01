@@ -1,0 +1,6 @@
+*.npz
+*.pyc
+*.log
+*.txt
+*.png
+*.json
