@@ -349,7 +349,7 @@ fiber_params = [
         # https://www.frontiersin.org/articles/10.3389/fnins.2019.00082/full#B13
         n1=1.4613,
         mod_radius=31.25,
-        curvature=10 / um
+        curvature=5 / um
     ),
     # dict(
     #     npoints=256,

@@ -47,7 +47,7 @@ index_type = 'GRIN'
 mod_type = 'slm'
 fiber_type = 'mmf'
 data_dir = 'mmf'
-curvature = 15
+curvature = 10
 _loaded_data = np.load(
     f'{data_dir}/cohdata_dist_011022_{fiber_type}_{mod_type}_{curvature}.npz',
     allow_pickle=True)
@@ -89,5 +89,5 @@ plt.xlabel('Расстояние, см.')
 plt.ylabel('Радиус корреляции, мкм')
 plt.legend(frameon=0)
 plt.tight_layout()
-plt.savefig('mmf/mmf_grin_cf_distance_exp.png', dpi=200)
+# plt.savefig('mmf/mmf_grin_cf_distance_exp.png', dpi=200)
 plt.show()
