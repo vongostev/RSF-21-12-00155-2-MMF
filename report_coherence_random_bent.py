@@ -17,7 +17,6 @@ from gi.experiment import corr1d3d
 from dataclasses import dataclass, field
 from scipy.sparse.linalg import expm
 from scipy.sparse import csc_matrix
-import sys
 from time import perf_counter
 import numpy as np
 import cupy as cp
