@@ -120,48 +120,17 @@ def calc_gi(fiber_props, ifgen):
     return emulator.ghost_data#{'gi': emulator.ghost_data}
 
 
-fiber_props_list = [str(p.resolve())
-                    for p in Path('data/').iterdir() if p.suffix == '.npz']
-log.info(fiber_props_list)
+fiber_props_list = [str(p.resolve()) for p in Path('data/').iterdir() if p.suffix == '.npz']
+for p in fiber_props_list:
+    print(p)
+
 ifgen_list = [
     random_round_hole_phase,
-    # random_round_hole
 ]
-params_keys = [
-    # 'SI__slm',
-    # 'GRIN__slm',
-    # 'SI__dmd',
-    # 'GRIN__dmd'
-    0, 10, 15, 20, 5
-]
+params_keys = [0, 10, 15, 20, 5]
 
 params = np.array(np.meshgrid(fiber_props_list, ifgen_list)).reshape((2, -1)).T
 
-# _fiber_data = Parallel(n_jobs=3)(delayed(calc_gi)(*p) for p in params)
 for k, p in zip(params_keys, params):
     _fiber_data = calc_gi(*p)
-    # fiber_data = {k: v for k, v in zip(params_keys, _fiber_data)}
     np.save(f'mmf/gi_data_curv_{k}.npy', _fiber_data)
-
-
-# lbl = 'abcd'
-# fig, ax = plt.subplots(2, 2, figsize=(6, 6), dpi=200)
-# ax = np.array(ax).flatten()
-# for i, fd in zip(range(4), fiber_data.items()):
-#     param, data = fd
-#     ax[i].imshow(data['gi'], extent=bounds * 2)
-#     ax[i].set_xlabel(f'({lbl[i]}) ' + param.replace('__', ', '))
-# plt.tight_layout()
-# plt.savefig('gi_model.png', dpi=200)
-# plt.show()
-
-# lbl = 'abcd'
-# fig, ax = plt.subplots(2, 2, figsize=(6, 6), dpi=200)
-# ax = np.array(ax).flatten()
-# for i, fd in zip(range(4), fiber_data.items()):
-#     param, data = fd
-#     ax[i].imshow(data['sc'], extent=bounds * 2)
-#     ax[i].set_xlabel(f'({lbl[i]}) ' + param.replace('__', ', '))
-# plt.tight_layout()
-# plt.savefig('sc_model.png', dpi=200)
-# plt.show()
