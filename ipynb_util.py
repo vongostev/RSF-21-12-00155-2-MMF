@@ -35,19 +35,23 @@ def plot_profiles_by_curv(profiles):
     plt.show()
 
 
-def calc_inout(modes, op, ref, fiber_len):
-    idx = len(modes)
+def calc_inout(modes, op, ref, fiber_len, max_modenum=None):
+    if max_modenum is None:
+        idx = len(modes)
+    else:
+        idx = max_modenum
     test = Beam2D(ref.area_size, ref.npoints, ref.wl, init_field=ref.field.copy(),
                   init_spectrum=ref.spectrum.copy(), use_gpu=True,
                   complex_bits=64)
     _modes = modes[:idx]
-    modes_matrix = np.vstack(_modes).T
-    modes_matrix_t = modes_matrix.T
-    modes_matrix_dot_t = modes_matrix.T.dot(modes_matrix)
+    # modes_matrix = np.vstack(_modes).T
+    # modes_matrix_t = modes_matrix.T
+    # modes_matrix_dot_t = modes_matrix.T.dot(modes_matrix)
     fiber_matrix = csc_matrix(expm(1j * op * fiber_len))[:idx, :idx]
 
-    m = test.fast_deconstruct_by_modes(
-        modes_matrix_t, modes_matrix_dot_t)
+    # m = test.fast_deconstruct_by_modes(
+    #     modes_matrix_t, modes_matrix_dot_t)
+    m = test.deconstruct_by_modes(_modes)
     test.construct_by_modes(_modes, m)
     res = [test.field, test.spectrum]
     m1 = fiber_matrix @ m
@@ -60,23 +64,31 @@ def plot_inout_data(data, c):
     f, s, f1, s1, _, _ = data
     f = f.get()
     f1 = f1.get()
-    s1 = np.fft.fftshift(s1.get())
     s = np.fft.fftshift(s.get())
-    fig, ax = plt.subplots(1, 6, figsize=(18, 3))
-    ax[0].imshow(np.abs(f) ** 2)
-    ax[0].set_title('Интенсивность на входе')
-    ax[1].imshow(np.abs(s))
-    ax[1].set_title('Спектр. амплитуда на входе')
-    ax[2].imshow(np.angle(s))
-    ax[2].set_title('Спектр. фаза на входе')
-    ax[3].imshow(np.abs(f1) ** 2)
-    ax[3].set_title('Интенсивность на выходе')
-    ax[4].imshow(np.abs(s1))
-    ax[4].set_title('Спектр. амплитуда на выходе')
-    ax[5].imshow(np.angle(s1))
-    ax[5].set_title('Спектр. фаза на выходе')
+    s1 = np.fft.fftshift(s1.get())
+    fig, ax = plt.subplots(2, 4, figsize=(12, 5))
+    data_in = {
+        'Амплитуда поля на входе': np.abs(f),
+        'Фаза поля на входе': np.angle(f),
+        'Спектр. амплитуда на входе': np.abs(s),
+        'Спектр. фаза на входе': np.angle(s)
+    }
+    data_out = {
+        'Амплитуда поля на выходе': np.abs(f1),
+        'Фаза поля на выходе': np.angle(f1),
+        'Спектр. амплитуда на выходе': np.abs(s1),
+        'Спектр. фаза на выходе': np.angle(s1)
+    }
+    for i, (lbl, d) in enumerate(data_in.items()):
+        im = ax[0, i].imshow(d)
+        ax[0, i].set_title(lbl)
+        fig.colorbar(im, ax=ax[0, i])
+    for i, (lbl, d) in enumerate(data_out.items()):
+        im = ax[1, i].imshow(d)
+        ax[1, i].set_title(lbl)
+        fig.colorbar(im, ax=ax[1, i])
     fig.suptitle(
-        f'Радиус кривизны оптического волокна {c if c > 0 else "∞"} см')
+        f'Радиус кривизны оптического волокна {c if c > 0 else "∞"} см', fontsize=16)
     plt.tight_layout()
     plt.show()
 
