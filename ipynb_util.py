@@ -1,11 +1,15 @@
 import __init__
 import numpy as np
-import cupy as cp
 from pathlib import Path
 import matplotlib.pyplot as plt
 from lightprop2d import Beam2D
-from cupyx.scipy.sparse import csc_matrix
 from scipy.linalg import expm
+
+try:
+    import cupy as cp
+    from cupyx.scipy.sparse import csc_matrix
+except ImportError:
+    print(">>> Can not load gpu libraries, set USE_GPU to False")
 
 
 def plot_modes(modes, indexes, bounds, curv):
@@ -35,37 +39,39 @@ def plot_profiles_by_curv(profiles):
     plt.show()
 
 
-def calc_inout(modes, op, ref, fiber_len, max_modenum=None):
+def calc_inout(modes, op, ref, fiber_len, max_modenum=None, use_gpu=True):
     if max_modenum is None:
         idx = len(modes)
     else:
         idx = max_modenum
     test = Beam2D(ref.area_size, ref.npoints, ref.wl, init_field=ref.field.copy(),
-                  init_spectrum=ref.spectrum.copy(), use_gpu=True,
+                  init_spectrum=ref.spectrum.copy(), use_gpu=use_gpu,
                   complex_bits=64)
-    _modes = modes[:idx]
-    # modes_matrix = np.vstack(_modes).T
-    # modes_matrix_t = modes_matrix.T
-    # modes_matrix_dot_t = modes_matrix.T.dot(modes_matrix)
-    fiber_matrix = csc_matrix(expm(1j * op * fiber_len))[:idx, :idx]
 
-    # m = test.fast_deconstruct_by_modes(
-    #     modes_matrix_t, modes_matrix_dot_t)
+    if use_gpu:
+        _modes = cp.asarray(modes[:idx])
+        fiber_matrix = csc_matrix(expm(1j * op * fiber_len))[:idx, :idx]
+    else:
+        _modes = modes[:idx]
+        fiber_matrix = expm(1j * op * fiber_len)[:idx, :idx]
+
     m = test.deconstruct_by_modes(_modes)
     test.construct_by_modes(_modes, m)
     res = [test.field, test.spectrum]
     m1 = fiber_matrix @ m
     test.construct_by_modes(_modes, m1)
     res += [test.field, test.spectrum, m, m1]
-    return res
+
+    if use_gpu:
+        return [x.get() for x in res]
+    else:
+        return res
 
 
 def plot_inout_data(data, c):
     f, s, f1, s1, _, _ = data
-    f = f.get()
-    f1 = f1.get()
-    s = np.fft.fftshift(s.get())
-    s1 = np.fft.fftshift(s1.get())
+    s = np.fft.fftshift(s)
+    s1 = np.fft.fftshift(s1)
     fig, ax = plt.subplots(2, 4, figsize=(12, 5))
     data_in = {
         'Амплитуда поля на входе': np.abs(f),
@@ -101,8 +107,8 @@ def load_fiber_data(mask, dir='data'):
     for f in files:
         c = int(f.name.split('_')[-1][:-4])
         d = np.load(f, mmap_mode='r', allow_pickle=True)
-        betas[c] = d['betas']
-        modes[c] = cp.asarray(d['modes_list'][np.argsort(betas[c])[::-1]])
+        betas[c] = np.asarray(d['betas'])
+        modes[c] = d['modes_list'][np.argsort(betas[c])[::-1]]
         betas[c] = sorted(betas[c])[::-1]
         ops[c] = d['fiber_op']
 
@@ -129,6 +135,7 @@ def ssim_struct(x, y):
 
 
 def SSIM(x, y, a=1, b=1, c=1):
+    # See https://arxiv.org/abs/2202.02616
     x = x / x.max()
     y = y / y.max()
     x = (x * 255).astype(np.uint8) / 255
