@@ -190,7 +190,7 @@ class LightFiberAnalyser:
         except FileNotFoundError:
             log.warning(f"Fiber data not found in `{self.fiber_props}`")
             log.info("Starting calculations...")
-            if self.index_type == 'SI':
+            if self.index_type == 'SI' and not self.curvature:
                 modes = self.solver.solve(mode='SI', n_jobs=-2)
             else:
                 modes = self.solver.solve(
@@ -339,17 +339,29 @@ class LightFiberAnalyser:
 
 fiber_params = [
     dict(
+        core_radius=4.5,
         npoints=256,
-        area_size=3.5 * 31.25,  # um
+        area_size=3.5 * 4.5,  # um
         # https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=358
-        index_type='GRIN',
-        core_radius=31.25,
-        NA=0.275,
+        index_type='SI',
+        NA=0.22,
         # https://www.frontiersin.org/articles/10.3389/fnins.2019.00082/full#B13
         n1=1.4613,
-        mod_radius=31.25,
-        curvature=5 / um
+        mod_radius=4.5,
+        curvature=10 / um
     ),
+    # dict(
+    #     npoints=256,
+    #     area_size=3.5 * 31.25,  # um
+    #     # https://www.thorlabs.com/newgrouppage9.cfm?objectgroup_id=358
+    #     index_type='GRIN',
+    #     core_radius=31.25,
+    #     NA=0.275,
+    #     # https://www.frontiersin.org/articles/10.3389/fnins.2019.00082/full#B13
+    #     n1=1.4613,
+    #     mod_radius=31.25,
+    #     curvature=5 / um
+    # ),
     # dict(
     #     npoints=256,
     #     area_size=3.5 * 31.25,  # um
@@ -447,9 +459,9 @@ mod_params = {
 
 # um
 fiber_len = 10 / um  # um for cm
-real_distances = [0, 20, 40, 60, 80, 100, 150, 200, 400, 1000, 3000, 10000]
+real_distances = []# [0, 20, 40, 60, 80, 100, 150, 200, 400, 1000, 3000, 10000]
 distances = np.diff(np.array([0] + real_distances)) * um
-expands = [1] * 6 + [2] * 1 + [1] * 2 + [2] * 3
+expands = [1] #* 6 + [2] * 1 + [1] * 2 + [2] * 3
 n_cf = 1000
 
 _dtoday = date.today()
@@ -509,7 +521,7 @@ for mod in mod_params:
         # fiber_data[itype]['fl__cf'] = analyser.correlate_by_fiber_len(
         #     n_cf, max_fiber_len=max_flen)
 
-    fname = f'{data_dir}/{PREFIX}_{_date}_{analyser.fiber_type}_{mod}_{int(analyser.curvature * um)}.npz'
+    fname = f'{data_dir}/{PREFIX}_{_date}_{analyser.fiber_type}_{analyser.core_radius * 2:.2g}_{mod}_{int(analyser.curvature * um) if analyser.curvature else 0}.npz'
     np.savez_compressed(fname, **fiber_data)
     log.info(f'Data saved to `{fname}`')
 
